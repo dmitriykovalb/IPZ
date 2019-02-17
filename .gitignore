@@ -1,4 +1,2 @@
 node_modules
-vscode
-sum.js
-sum.test.js
+.vscode
