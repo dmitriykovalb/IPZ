@@ -1,0 +1,15 @@
+language: node_js
+
+node_js:
+    - "8.10.0"
+
+# before_script:
+#   - npm install -g gulp-cli
+# script: gulp
+
+# rvm:
+# - 1.9.3
+# - rbx-18mode
+# env:
+# - FOO=foo BAR=bar
+# - FOO=bar BAR=foo:
