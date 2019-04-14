@@ -1,80 +1,62 @@
-var lr = require('tiny-lr'),// Мінівебсервер для livereload
-gulp = require('gulp'),
-// Gulp JS
-jade = require('gulp-jade'),
-// Плагін для Jade
-stylus = require('gulp-stylus'), // Плагін для Stylus
-livereload = require('gulp-livereload'), // Livereload для Gulp
-myth = require('gulp-myth'),
-// Плагін для Myth - http://www.myth.io/
-csso = require('gulp-csso'),
-// Мініфікація CSS
-imagemin = require('gulp-imagemin'),
-// Мініфікація зображень
-uglify = require('gulp-uglify'),
-// Мініфікація JS
-concat = require('gulp-concat'),
-// Склейка файлів
-connect = require('connect'),
-// Webserver
-server = lr();
+const gulp = require('gulp');
+const concat = require('gulp-concat');
+const autoprefixer = require('gulp-autoprefixer');
+const cleanCSS = require('gulp-clean-css');
+const uglify = require('gulp-uglify-es').default;
+const del = require('del');
+const imagemin = require('gulp-imagemin');
 
+const cssFiles = [
+    './node_modules/normalize.css/normalize.css',
+    './src/css/other.css'
+];
 
-gulp.task('stylus', function() {
-    gulp.src('./assets/stylus/screen.styl')
-    .pipe(stylus({
-    use: ['nib']
-    }))
-    // збираємо stylus
-    .on('error', console.log) // Повідомлення в разі помилки
-    .pipe(myth()) // додаємо префіксы - http://www.myth.io/
-    .pipe(gulp.dest('./public/css/')) // записуємо css
-    .pipe(livereload(server)); // даемо команду на перезавантаження css
-});
+const jsFiles = [
+    './src/js/some.js'
+]
+function styles() {
+    return gulp.src(cssFiles)
+        .pipe(concat('all.css'))
+        .pipe(autoprefixer({
+            browsers: ['> 0.1%'],
+            cascade: false
+        }))
+        .pipe(cleanCSS({
+            level: 2
+        }))
+        .pipe(gulp.dest('./build/css'))
+};
 
+function scripts() {
+    return gulp.src(jsFiles)
+        .pipe(concat('all.js'))
+        .pipe(uglify({
+            toplevel: true
+        }))
+        .pipe(gulp.dest('./build/js'))
+};
 
-gulp.src('js/app.js')
-.pipe(uglify())
-.pipe(gulp.dest('build'));
+function img() {
+    return gulp.src('src/images/*')
+        .pipe(imagemin())
+        .pipe(gulp.dest('build/images'))
+}
 
+function watch() {
+    gulp.watch('./src/css/**/*.css', styles);
+    gulp.watch('./src/js/**/*.js', scripts);
+}
 
-gulp.task('js', function() {
-    return gulp.src('js/*.js')
-    .pipe(jshint())
-    .pipe(jshint.reporter('default'))
-    .pipe(uglify())
-    .pipe(concat('app.js'))
-    .pipe(gulp.dest('build'));
-});
+function clean() {
+    return del(['build/*']);
+}
 
+gulp.task('styles', styles);
+gulp.task('scripts', scripts);
+gulp.task('img', img);
+gulp.task('watch', watch);
 
-gulp.task('http-server', function() {
-    connect()
-    .use(require('connect-livereload')())
-    .use(connect.static('./public'))
-    .listen('9000');
-    console.log('Server listening on http://localhost:9000');
-});
+gulp.task('build', gulp.series(clean,
+    gulp.parallel(styles, scripts, img)));
 
-gulp.task('watch', function() {
-    gulp.start('stylus');
-    gulp.start('jade');
-    gulp.start('images');
-    gulp.start('js');
-    server.listen(35729, function(err) {
-    if (err) return console.log(err);
-    gulp.watch('assets/stylus/**/*.styl', function() {
-    gulp.start('stylus');
-    });
-    gulp.watch('assets/template/**/*.jade', function() {
-    gulp.start('jade');
-    });
-    gulp.watch('assets/img/**/*', function() {
-    gulp.start('images');
-    });
-    gulp.watch('assets/js/**/*', function() {
-    gulp.start('js');
-    });
-    });
-    gulp.start('http-server');
-});
+gulp.task('dev', gulp.series('build', 'watch'));
